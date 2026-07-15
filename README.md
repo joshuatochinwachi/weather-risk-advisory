@@ -19,7 +19,7 @@
 
 ---
 
-> **Weather Risk Advisory** is a full-stack agronomic intelligence platform purpose-built for smallholder farmers in Nairobi, Bomet, Mombasa, and the wider East African region. It proxies real-time weather data through a Python backend, applies a transparent agronomic risk engine across four threshold dimensions (frost, drought, extreme wind, heavy rain), and renders the full risk picture in a cinematic Next.js dashboard — complete with a 5-second animated splash screen that mirrors the actual data loading lifecycle.
+> **Weather Risk Advisory** is a full-stack agronomic intelligence platform purpose-built for farmers and agricultural operators worldwide. It proxies real-time weather data through a Python backend, applies a transparent agronomic risk engine across four threshold dimensions (frost, drought, extreme wind, heavy rain), and renders the full risk picture in a cinematic Next.js dashboard — complete with a 5-second animated splash screen that mirrors the actual data loading lifecycle.
 
 ---
 
@@ -426,7 +426,7 @@ Cloud fills use semi-transparent `rgba()` blues — visible on both mobile and d
 
 Layered SVG nature scene at the bottom of the splash canvas:
 - **Hills** — multiple depth layers with color progression (deeper color = further distance)
-- **Acacia trees** — characteristic East African flat-crown silhouettes
+- **Acacia trees** — characteristic tree silhouettes
 - **Crop sprigs** — agricultural field texture representing the target audience
 
 #### useSplashPhase.ts
@@ -487,7 +487,7 @@ precip > 50mm  → heavy_rain (medium)
 precip > 100mm → heavy_rain (high)
 ```
 
-**Why 50mm?** A 50mm single-day event exceeds typical soil infiltration rates in East African red clay soils, causing surface runoff, erosion, and potential flooding of low-lying fields.
+**Why 50mm?** A 50mm single-day event exceeds typical soil infiltration rates in heavy clay soils, causing surface runoff, erosion, and potential flooding of low-lying fields.
 
 ---
 
@@ -746,7 +746,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### 4. Manual API Test Calls
 
 ```bash
-# Nairobi coordinates
+# Default coordinates
 curl "http://localhost:8000/api/weather?lat=-1.2921&lon=36.8219"
 
 # Auto geo-detect from your public IP
@@ -828,7 +828,7 @@ python -m pytest tests/ -v
 - [ ] Crop Profile Selection — User selects crop type; thresholds adjust for maize, coffee, tea, beans
 - [ ] Historical Risk Log — Track past risk assessments per location in a lightweight database
 - [ ] SMS Alerts via Africa's Talking — Push risk alerts to farmers without smartphones
-- [ ] Multi-Language Support — Swahili UI translation for Kenyan and Tanzanian users
+- [ ] Multi-Language Support — localized UI translation for global regions
 - [ ] Offline Mode (PWA) — Cache last known forecast for connectivity-challenged rural areas
 
 ---
