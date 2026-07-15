@@ -1,12 +1,11 @@
 <p align="center">
-  <strong>Real-time agronomic weather risk intelligence.</strong>
+  <strong>Real-time agronomic weather risk intelligence</strong>
 </p>
 
 <p align="center">
   <a href="https://weather.joshuatochinwachi.online"><img src="https://img.shields.io/badge/Live_App-weather.joshuatochinwachi.online-4F6EF7?style=for-the-badge&labelColor=0B1224" alt="Live App" /></a>
-  <a href="./backend/app/main.py"><img src="https://img.shields.io/badge/API-FastAPI_Docs-4F6EF7?style=for-the-badge&labelColor=0B1224" alt="API Docs" /></a>
-  <a href="./backend/.env.example"><img src="https://img.shields.io/badge/Config-.env.example-4F6EF7?style=for-the-badge&labelColor=0B1224" alt="Env Config" /></a>
-</p>
+  <a href="https://weather-backend.joshuatochinwachi.online/docs"><img src="https://img.shields.io/badge/API-FastAPI_Docs-4F6EF7?style=for-the-badge&labelColor=0B1224" alt="API Docs" /></a>
+</p>  
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" />
