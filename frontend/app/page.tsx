@@ -222,17 +222,9 @@ function HomePageInner() {
   // UI state
   const [appState, setAppState] = useState<AppState>({ status: 'idle' });
   const [view, setView] = useState<WeatherView>('daily');
-  const [lang, setLang] = useState<'en' | 'sw'>('en');
   const [units] = useState<'metric' | 'imperial'>('metric');
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
-
-  // ---------------------------------------------------------------------------
-  // Load recent searches from localStorage
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    setRecent(loadRecent());
-  }, []);
 
   // ---------------------------------------------------------------------------
   // Fetch
@@ -241,11 +233,10 @@ function HomePageInner() {
     fLat: number,
     fLon: number,
     fDays = 7,
-    fLang = 'en',
   ) => {
     setAppState({ status: 'loading' });
     try {
-      const data = await fetchWeather(fLat, fLon, fDays, units, fLang);
+      const data = await fetchWeather(fLat, fLon, fDays, units, 'en');
       setAppState({ status: 'success', data });
     } catch (err: unknown) {
       const e = err as { httpStatus?: number; apiError?: ApiError };
@@ -261,13 +252,16 @@ function HomePageInner() {
   }, [units]);
 
   // ---------------------------------------------------------------------------
-  // On mount: read URL params or geolocate
+  // On mount: Load recent searches and initialize location
   // ---------------------------------------------------------------------------
   useEffect(() => {
+    setRecent(loadRecent());
+
     const paramLat = searchParams.get('lat');
     const paramLon = searchParams.get('lon');
     const paramDays = searchParams.get('days');
 
+    // 1. If URL coordinates exist, they take highest priority.
     if (paramLat && paramLon) {
       const pLat = parseFloat(paramLat);
       const pLon = parseFloat(paramLon);
@@ -275,39 +269,87 @@ function HomePageInner() {
       if (!isNaN(pLat) && !isNaN(pLon)) {
         setLat(pLat);
         setLon(pLon);
-        doFetch(pLat, pLon, pDays, lang);
+        doFetch(pLat, pLon, pDays);
         return;
       }
     }
 
-    // No URL params — silently resolve user location.
-    // Use a ref to prevent double-fetch if the browser callback fires
-    // before the IP fallback promise resolves.
     let fetchStarted = false;
     setGeoLoading(true);
 
-    resolveUserLocation((result) => {
-      // Fires immediately when browser geolocation succeeds
-      if (!fetchStarted) {
-        fetchStarted = true;
-        setLat(result.lat);
-        setLon(result.lon);
-        setGeoLoading(false);
-        doFetch(result.lat, result.lon, 7, lang);
-      }
-    }).then((result) => {
-      setGeoLoading(false);
-      if (!fetchStarted) {
-        fetchStarted = true;
-        setLat(result.lat);
-        setLon(result.lon);
-        if (result.city) setLocationName(result.city);
-        doFetch(result.lat, result.lon, 7, lang);
-      }
-    }).catch(() => setGeoLoading(false));
+    // Helper to fall back to storage or IP geocoding
+    const handleLocationFallback = () => {
+      // 3. Try reading last saved location from localStorage
+      try {
+        const lastLoc = localStorage.getItem('wra_last_location');
+        if (lastLoc) {
+          const parsed = JSON.parse(lastLoc);
+          if (typeof parsed.lat === 'number' && typeof parsed.lon === 'number') {
+            setLat(parsed.lat);
+            setLon(parsed.lon);
+            if (parsed.name) setLocationName(parsed.name);
+            setGeoLoading(false);
+            fetchStarted = true;
+            doFetch(parsed.lat, parsed.lon, 7);
+            return;
+          }
+        }
+      } catch {}
+
+      // 4. If no saved location, fall back to IP geolocation
+      resolveUserLocation()
+        .then((result) => {
+          setGeoLoading(false);
+          if (!fetchStarted) {
+            fetchStarted = true;
+            setLat(result.lat);
+            setLon(result.lon);
+            if (result.city) setLocationName(result.city);
+            try {
+              localStorage.setItem('wra_last_location', JSON.stringify({ lat: result.lat, lon: result.lon, name: result.city || '' }));
+            } catch {}
+            doFetch(result.lat, result.lon, 7);
+          }
+        })
+        .catch(() => {
+          setGeoLoading(false);
+          if (!fetchStarted) {
+            fetchStarted = true;
+            // Nairobi hard fallback
+            doFetch(-1.2921, 36.8219, 7);
+          }
+        });
+    };
+
+    // 2. Try browser geolocation first for maximum accuracy
+    if (navigator?.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!fetchStarted) {
+            fetchStarted = true;
+            const currentLat = pos.coords.latitude;
+            const currentLon = pos.coords.longitude;
+            setLat(currentLat);
+            setLon(currentLon);
+            setLocationName('My Location');
+            try {
+              localStorage.setItem('wra_last_location', JSON.stringify({ lat: currentLat, lon: currentLon, name: 'My Location' }));
+            } catch {}
+            setGeoLoading(false);
+            doFetch(currentLat, currentLon, 7);
+          }
+        },
+        () => {
+          // Geolocation permission denied or timed out — go to fallback
+          handleLocationFallback();
+        },
+        { enableHighAccuracy: true, timeout: 4000, maximumAge: 60000 }
+      );
+    } else {
+      handleLocationFallback();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   // ---------------------------------------------------------------------------
   // When user picks a location from map/search
@@ -316,6 +358,11 @@ function HomePageInner() {
     setLat(newLat);
     setLon(newLon);
     if (name) setLocationName(name);
+
+    // Save to last location
+    try {
+      localStorage.setItem('wra_last_location', JSON.stringify({ lat: newLat, lon: newLon, name }));
+    } catch {}
 
     // Update URL so the result is shareable
     const params = new URLSearchParams({ lat: newLat.toFixed(4), lon: newLon.toFixed(4) });
@@ -329,24 +376,14 @@ function HomePageInner() {
       saveRecent(updated);
     }
 
-    doFetch(newLat, newLon, 7, lang);
-  }, [recent, lang, router, doFetch]);
-
-  // ---------------------------------------------------------------------------
-  // Language toggle — re-fetch immediately with new lang
-  // ---------------------------------------------------------------------------
-  const handleLangToggle = useCallback((newLang: 'en' | 'sw') => {
-    if (newLang === lang) return;
-    setLang(newLang);
-    if (appState.status !== 'idle') {
-      doFetch(lat, lon, 7, newLang);
-    }
-  }, [lang, lat, lon, appState.status, doFetch]);
+    doFetch(newLat, newLon, 7);
+  }, [recent, router, doFetch]);
 
   const handleRetry = () => setAppState({ status: 'idle' });
 
   const isLoading = appState.status === 'loading';
   const successData = appState.status === 'success' ? appState.data : null;
+
 
   return (
     <>
@@ -369,35 +406,7 @@ function HomePageInner() {
             <p>Powered by Weather-AI API</p>
           </div>
 
-          {/* Language toggle — switches AI summary language */}
-          <div
-            className="lang-toggle"
-            role="group"
-            aria-label="AI summary language"
-            style={{ marginLeft: 'auto' }}
-            title="Switch the AI weather summary language"
-          >
-            <button
-              id="lang-en-btn"
-              type="button"
-              className={`lang-btn${lang === 'en' ? ' active' : ''}`}
-              onClick={() => handleLangToggle('en')}
-              aria-pressed={lang === 'en'}
-              title="AI summary in English"
-            >
-              English
-            </button>
-            <button
-              id="lang-sw-btn"
-              type="button"
-              className={`lang-btn${lang === 'sw' ? ' active' : ''}`}
-              onClick={() => handleLangToggle('sw')}
-              aria-pressed={lang === 'sw'}
-              title="AI summary in Swahili"
-            >
-              Swahili
-            </button>
-          </div>
+
 
           <div className="header-badge" aria-label="Live service indicator">
             <span className="dot" aria-hidden="true" />
