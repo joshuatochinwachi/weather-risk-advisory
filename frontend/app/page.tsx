@@ -10,6 +10,7 @@ import QuotaFooter from '../components/QuotaFooter';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import LocationSearch from '../components/LocationSearch';
 import MapView from '../components/MapView';
+import { SplashScreen } from '../components/SplashScreen/SplashScreen';
 
 import { fetchWeather } from '../lib/api';
 import { resolveUserLocation } from '../lib/geolocation';
@@ -225,6 +226,26 @@ function HomePageInner() {
   const [units] = useState<'metric' | 'imperial'>('metric');
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [geoLoading, setGeoLoading] = useState(false);
+
+  // Splash Screen state
+  const [showSplash, setShowSplash] = useState(false);
+  const [splashCompleted, setSplashCompleted] = useState(false);
+
+  useEffect(() => {
+    const hasSeen = sessionStorage.getItem('wra_has_seen_splash');
+    if (!hasSeen) {
+      setShowSplash(true);
+    } else {
+      setSplashCompleted(true);
+    }
+  }, []);
+
+  const handleSplashComplete = useCallback(() => {
+    try {
+      sessionStorage.setItem('wra_has_seen_splash', 'true');
+    } catch {}
+    setSplashCompleted(true);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Fetch
@@ -631,6 +652,15 @@ function HomePageInner() {
 
       {/* Quota Footer — fixed at bottom */}
       <QuotaFooter />
+
+      {showSplash && !splashCompleted && (
+        <SplashScreen
+          isDataReady={appState.status === 'success' || appState.status === 'error'}
+          lat={lat}
+          lon={lon}
+          onComplete={handleSplashComplete}
+        />
+      )}
     </>
   );
 }
