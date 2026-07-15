@@ -1445,72 +1445,109 @@ body::before {
   height: 100%;
   pointer-events: none;
   z-index: 3;
-  opacity: 0;
-  transition: opacity 1s ease, transform 1s ease;
 }
 
-.phase-gathering .cloud-layer,
-.phase-rain .cloud-layer {
-  opacity: 0.6;
+/* Cloud SVG base styles */
+.cloud-svg-1, .cloud-svg-2, .cloud-svg-3 {
+  position: absolute;
+  pointer-events: none;
+  transition: transform 2.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 2.5s ease, filter 2.5s ease;
+  will-change: transform, opacity;
 }
 
-.phase-clearing .cloud-layer {
-  opacity: 0.25;
-  transform: translateY(-20px) scale(1.05);
-}
-
+/* Cloud 1 (Starts Left-Top) */
 .cloud-svg-1 {
-  position: absolute;
-  top: 10%;
-  left: -20%;
-  width: 450px;
-  height: auto;
-  fill: #344e75;
-  opacity: 0.25;
-  filter: blur(16px);
-  animation: drift-right-fast 30s linear infinite;
-}
-
-.cloud-svg-2 {
-  position: absolute;
-  top: 25%;
-  right: -25%;
-  width: 500px;
-  height: auto;
-  fill: #1e355c;
-  opacity: 0.35;
-  filter: blur(20px);
-  animation: drift-left-fast 35s linear infinite;
-}
-
-.cloud-svg-3 {
-  position: absolute;
   top: 5%;
+  left: -20%;
+  width: 480px;
+  fill: #22375a;
+  filter: blur(24px);
+  opacity: 0;
+  transform: translate3d(-200px, 0, 0);
+}
+
+/* Cloud 2 (Starts Right-Middle) */
+.cloud-svg-2 {
+  top: 20%;
+  right: -25%;
+  width: 520px;
+  fill: #152542;
+  filter: blur(28px);
+  opacity: 0;
+  transform: translate3d(200px, 0, 0);
+}
+
+/* Cloud 3 (Starts Center-Top) */
+.cloud-svg-3 {
+  top: -15%;
   left: 20%;
-  width: 320px;
-  height: auto;
-  fill: #3a6396;
-  opacity: 0.2;
+  width: 400px;
+  fill: #2c446b;
+  filter: blur(20px);
+  opacity: 0;
+  transform: translate3d(0, -150px, 0);
+}
+
+/* Phase 1: Dawn (Initial state) */
+.phase-dawn .cloud-svg-1 { opacity: 0.25; transform: translate3d(0, 0, 0); }
+.phase-dawn .cloud-svg-2 { opacity: 0.3; transform: translate3d(0, 0, 0); }
+.phase-dawn .cloud-svg-3 { opacity: 0.15; transform: translate3d(0, 0, 0); }
+
+/* Phase 2: Gathering (Clouds move towards center) */
+.phase-gathering .cloud-svg-1 {
+  opacity: 0.65;
+  fill: #1a2c4d;
+  filter: blur(18px);
+  transform: translate3d(22vw, 20px, 0) scale(1.05);
+}
+.phase-gathering .cloud-svg-2 {
+  opacity: 0.75;
+  fill: #101c33;
+  filter: blur(22px);
+  transform: translate3d(-22vw, -20px, 0) scale(1.05);
+}
+.phase-gathering .cloud-svg-3 {
+  opacity: 0.55;
+  fill: #22375a;
+  filter: blur(16px);
+  transform: translate3d(0, 80px, 0) scale(1.02);
+}
+
+/* Phase 3: Rain (Gathered completely at center, storming) */
+.phase-rain .cloud-svg-1 {
+  opacity: 0.85;
+  fill: #121f38;
   filter: blur(12px);
-  animation: drift-right-slow 50s linear infinite;
+  transform: translate3d(28vw, 40px, 0) scale(1.15);
+}
+.phase-rain .cloud-svg-2 {
+  opacity: 0.9;
+  fill: #0c1426;
+  filter: blur(15px);
+  transform: translate3d(-28vw, 10px, 0) scale(1.15);
+}
+.phase-rain .cloud-svg-3 {
+  opacity: 0.75;
+  fill: #192b4a;
+  filter: blur(10px);
+  transform: translate3d(0, 110px, 0) scale(1.1);
 }
 
-@keyframes drift-right-fast {
-  0% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(120px, 15px, 0); }
-  100% { transform: translate3d(0, 0, 0); }
+/* Phase 4: Clearing (Clouds part and disperse outward) */
+.phase-clearing .cloud-svg-1 {
+  opacity: 0.1;
+  transform: translate3d(-250px, -60px, 0) scale(0.9);
+  filter: blur(30px);
 }
-
-@keyframes drift-left-fast {
-  0% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(-150px, -20px, 0); }
-  100% { transform: translate3d(0, 0, 0); }
+.phase-clearing .cloud-svg-2 {
+  opacity: 0.1;
+  transform: translate3d(250px, -40px, 0) scale(0.9);
+  filter: blur(30px);
 }
-
-@keyframes drift-right-slow {
-  0% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(90px, -10px, 0); }
-  100% { transform: translate3d(0, 0, 0); }
+.phase-clearing .cloud-svg-3 {
+  opacity: 0.05;
+  transform: translate3d(0, -220px, 0) scale(0.9);
+  filter: blur(25px);
 }
 
 .splash-content {
@@ -1604,6 +1641,24 @@ body::before {
   box-shadow: 0 0 8px rgba(124, 92, 252, 0.5);
 }
 
+.splash-landscape {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 25vh;
+  min-height: 160px;
+  z-index: 5;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+}
+
+.landscape-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .sky-canvas, 
@@ -1628,4 +1683,28 @@ body::before {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(0.96); }
 }
+
+/* Mobile responsive adjustments for splash content */
+@media (max-width: 480px) {
+  .splash-content {
+    padding: 20px;
+    max-width: 320px;
+  }
+  .splash-logo-mark {
+    font-size: 3rem;
+    margin-bottom: 12px;
+  }
+  .splash-wordmark {
+    font-size: 1.6rem;
+    margin-bottom: 24px;
+  }
+  .status-ticker {
+    font-size: 0.78rem;
+  }
+  .splash-landscape {
+    height: 20vh;
+    min-height: 120px;
+  }
+}
+
 

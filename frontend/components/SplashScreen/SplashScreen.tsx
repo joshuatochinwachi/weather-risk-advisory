@@ -5,6 +5,7 @@ import { useSplashPhase, SplashPhase } from './useSplashPhase';
 import { SkyCanvas } from './SkyCanvas';
 import { CloudLayer } from './CloudLayer';
 import { StatusTicker } from './StatusTicker';
+import { Landscape } from './Landscape';
 
 interface SplashScreenProps {
   isDataReady: boolean;
@@ -96,6 +97,9 @@ export function SplashScreen({ isDataReady, lat, lon, onComplete }: SplashScreen
           </span>
         </div>
       </div>
+
+      {/* Nature landscape silhouette layer */}
+      <Landscape />
     </div>
   );
 }
