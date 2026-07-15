@@ -369,12 +369,13 @@ function HomePageInner() {
             <p>Powered by Weather-AI API</p>
           </div>
 
-          {/* Language toggle */}
+          {/* Language toggle — switches AI summary language */}
           <div
             className="lang-toggle"
             role="group"
             aria-label="AI summary language"
             style={{ marginLeft: 'auto' }}
+            title="Switch the AI weather summary language"
           >
             <button
               id="lang-en-btn"
@@ -382,8 +383,9 @@ function HomePageInner() {
               className={`lang-btn${lang === 'en' ? ' active' : ''}`}
               onClick={() => handleLangToggle('en')}
               aria-pressed={lang === 'en'}
+              title="AI summary in English"
             >
-              EN
+              English
             </button>
             <button
               id="lang-sw-btn"
@@ -391,8 +393,9 @@ function HomePageInner() {
               className={`lang-btn${lang === 'sw' ? ' active' : ''}`}
               onClick={() => handleLangToggle('sw')}
               aria-pressed={lang === 'sw'}
+              title="AI summary in Swahili"
             >
-              SW
+              Swahili
             </button>
           </div>
 
@@ -410,12 +413,54 @@ function HomePageInner() {
             <p className="section-label" id="location-label">Select Location</p>
             <div className="glass-card location-card">
 
-              {/* Geocoding search */}
-              <LocationSearch
-                onSelect={handleLocationSelect}
-                disabled={isLoading}
-                initialValue={locationName}
-              />
+              {/* Search row: geocoding input + GPS button side by side */}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <LocationSearch
+                    onSelect={handleLocationSelect}
+                    disabled={isLoading}
+                    initialValue={locationName}
+                  />
+                </div>
+                <button
+                  id="use-my-location-btn"
+                  type="button"
+                  className="gps-btn"
+                  disabled={isLoading || geoLoading}
+                  title="Use my current GPS location"
+                  aria-label="Use my current GPS location"
+                  onClick={() => {
+                    if (!navigator?.geolocation) {
+                      alert('Your browser does not support GPS location.');
+                      return;
+                    }
+                    setGeoLoading(true);
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setGeoLoading(false);
+                        handleLocationSelect(
+                          pos.coords.latitude,
+                          pos.coords.longitude,
+                          'My Location',
+                        );
+                      },
+                      () => {
+                        setGeoLoading(false);
+                        alert(
+                          'Location access denied.\n\nTo fix this: click the lock icon in your browser address bar → Site settings → Location → Allow.',
+                        );
+                      },
+                      { enableHighAccuracy: true, timeout: 8000 },
+                    );
+                  }}
+                >
+                  {geoLoading ? (
+                    <span className="gps-spinner" aria-hidden="true" />
+                  ) : (
+                    <span aria-hidden="true">📍</span>
+                  )}
+                </button>
+              </div>
 
               {/* Recent searches */}
               {recent.length > 0 && (

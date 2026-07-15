@@ -1291,4 +1291,49 @@ body::before {
   .risk-header { flex-wrap: wrap; }
   .risk-location { margin-left: 0; text-align: left; }
   .quota-footer { padding: 8px 16px; }
+  .lang-btn { padding: 4px 8px; font-size: 0.7rem; }
+}
+
+/* ---------------------------------------------------------------------------
+   GPS "Use my location" button
+   --------------------------------------------------------------------------- */
+.gps-btn {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 1.1rem;
+  color: var(--text-accent);
+}
+
+.gps-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: scale(1.05);
+}
+
+.gps-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.gps-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gps-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
 }
