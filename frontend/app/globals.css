@@ -1659,23 +1659,20 @@ body::before {
   display: block;
 }
 
-/* Reduced motion preference */
+/* Reduced motion preference — only stops pure CSS keyframe animations, 
+   canvas & cloud layers still render so the core experience is visible */
 @media (prefers-reduced-motion: reduce) {
-  .sky-canvas, 
-  .cloud-layer,
-  .sun-glow {
-    display: none !important;
-  }
   .splash-container {
-    background: var(--sky-dawn) !important;
     animation: none !important;
-    transition: none !important;
   }
   .splash-logo-mark {
     animation: simple-pulse 2s ease-in-out infinite !important;
   }
   .status-ticker-caret {
     animation: none !important;
+  }
+  .cloud-svg-1, .cloud-svg-2, .cloud-svg-3 {
+    transition: none !important;
   }
 }
 
