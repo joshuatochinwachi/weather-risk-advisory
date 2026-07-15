@@ -65,8 +65,8 @@ export function SkyCanvas({ phase, lat, lon }: SkyCanvasProps) {
     
     // Initialize particles (drops/flakes)
     const particles: Particle[] = Array.from({ length: count }, () => {
-      const pWidth = canvas.width || window.innerWidth;
-      const pHeight = canvas.height || window.innerHeight;
+      const pWidth = window.innerWidth;
+      const pHeight = window.innerHeight;
       return {
         x: Math.random() * pWidth,
         y: Math.random() * pHeight,
