@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import ALLOWED_ORIGINS
-from app.routes import quota, trees, weather
+from app.routes import geo, quota, weather
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -55,7 +55,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 app.include_router(weather.router, prefix="/api")
 app.include_router(quota.router, prefix="/api")
-app.include_router(trees.router, prefix="/api")
+app.include_router(geo.router, prefix="/api")
 
 
 # ---------------------------------------------------------------------------

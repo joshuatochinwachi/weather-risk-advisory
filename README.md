@@ -1,8 +1,8 @@
 # Weather Risk Advisory
 
-A real-time agronomic risk advisory web app for farmers. Enter a location, get AI-powered weather analysis, and see risk flags for frost, drought, extreme wind, and heavy rain — all in a clean, dark-mode UI.
+A real-time agronomic risk advisory web app for farmers. Search or click a location on the map, get AI-powered weather analysis, and see risk flags for frost, drought, extreme wind, and heavy rain — all in a clean, dark-mode UI.
 
-**Live demo:** [https://your-app.vercel.app](https://your-app.vercel.app) ← update after deployment
+**Live demo:** [https://weather.joshuatochinwachi.online](https://weather.joshuatochinwachi.online)
 
 ---
 
@@ -11,17 +11,21 @@ A real-time agronomic risk advisory web app for farmers. Enter a location, get A
 ```
 Browser (Next.js 14)
        │
-       │  GET /api/weather?lat=..&lon=..
+       │  GET /api/weather?lat=..&lon=..&lang=..
        │  GET /api/quota
-       │  POST /api/trees
+       │  GET /api/weather-geo           (IP-based location fallback)
        ▼
 FastAPI Backend (Railway)
        │
-       │  GET /v1/weather?ai=true   ← Weather-AI API
+       │  GET /v1/weather?ai=true        ← Weather-AI API
        │  GET /v1/usage
-       │  POST /v1/trees/analyze
+       │  GET /v1/weather-geo            (IP-based geolocation)
        ▼
   api.weather-ai.co
+
+Browser ──(Mapbox GL JS CDN)──► api.mapbox.com
+       │  Map tiles + geocoding search happen entirely client-side.
+       │  No Mapbox calls go through the FastAPI backend.
 ```
 
 The frontend **never** calls `api.weather-ai.co` directly. All Weather-AI requests are proxied through the FastAPI backend so the API key stays server-side only.
@@ -34,11 +38,12 @@ The frontend **never** calls `api.weather-ai.co` directly. All Weather-AI reques
 - Python 3.11+
 - Node.js 18+
 - A Weather-AI API key (`wai_...`) from [weather-ai.co](https://weather-ai.co)
+- A Mapbox public token from [mapbox.com](https://mapbox.com) (free tier, no card required for first 50K map loads/month)
 
 ### 1. Clone
 
 ```bash
-git clone https://github.com/youruser/weather-risk-advisory.git
+git clone https://github.com/joshuatochinwachi/weather-risk-advisory.git
 cd weather-risk-advisory
 ```
 
@@ -57,8 +62,9 @@ uvicorn app.main:app --reload
 
 ```bash
 cd frontend
-cp .env.local.example .env.local   # or create .env.local with:
-# NEXT_PUBLIC_API_URL=http://localhost:8000
+cp .env.local.example .env.local
+# Set NEXT_PUBLIC_API_URL=http://localhost:8000
+# Set NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ...your_token
 npm install
 npm run dev
 # → http://localhost:3000
@@ -78,39 +84,57 @@ npm run dev
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | No | Backend URL (defaults to `http://localhost:8000`) |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | ✅ | Mapbox public token for map + geocoding (must be `NEXT_PUBLIC_` prefix) |
 
 ---
 
-## API endpoints (your backend surface)
+## API endpoints (backend surface)
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/weather?lat=&lon=` | Risk assessment + 7-day forecast |
+| `GET` | `/api/weather?lat=&lon=&lang=` | Risk assessment + 7-day forecast + hourly + current |
+| `GET` | `/api/weather-geo` | IP-based geolocation weather fallback |
 | `GET` | `/api/quota` | Remaining API quota |
-| `POST` | `/api/trees` | Farm image tree analysis |
 | `GET` | `/health` | Health check (Railway uses this) |
 | `GET` | `/docs` | Interactive API docs (Swagger) |
 
 ---
 
+## Features
+
+- **Interactive Mapbox map** — click or drag a pin to select any location globally
+- **Geocoding search** — type a city name, autocomplete powered by Mapbox Geocoding API
+- **IP-based geolocation fallback** — if browser location is denied, the app silently resolves your location via the backend's `/api/weather-geo` proxy
+- **Shareable URLs** — `?lat=..&lon=..` query params so risk assessments can be linked directly
+- **Language toggle** — switch the AI summary between English and Swahili (`lang=sw`) — relevant for Kenya's farmers
+- **View tabs** — Current conditions, 7-Day daily forecast, Hourly strip — all from one API call
+- **Recent searches** — last 5 searched locations stored in `localStorage`, one-click to re-select
+
+---
+
 ## Design decisions
 
-### Why this app calls `/v1/weather` with `ai=true` and NOT `/v1/insights`
+### Why `/v1/weather` with `ai=true` and NOT `/v1/insights`
 `/v1/insights` requires a Pro/Scale plan and returns a 403 on Free. This app deliberately uses `/v1/weather?ai=true`, which returns the Gemini-generated summary field on all plans. This is documented in the Weather-AI API docs.
 
+### Why one backend endpoint, not four
+`/v1/current`, `/v1/daily`, `/v1/hourly`, and `/v1/forecast` are documented aliases of the same handler as `/v1/weather`. The UI derives all views (Current / Daily / Hourly tabs) from a single `/api/weather` response — fewer API calls, fewer failure points, correct by the docs.
+
+Uses `/v1/weather` as the single data source; `/v1/current`, `/v1/daily`, `/v1/hourly`, and `/v1/forecast` are documented aliases of the same handler, so the UI derives all views from one API call rather than four redundant integrations.
+
+### Why Mapbox and not Google Maps
+Google Maps Platform requires a credit card on file even to stay within the free tier (as of March 2025). Mapbox's free tier is 50K map loads/month and 100K geocoding requests/month, no card required to sign up. The Mapbox token is URL-restricted to the production domain — that's Mapbox's intended security model for public tokens.
+
 ### Why in-memory cache instead of Redis
-The Free plan allows **1,000 requests/month**. Without caching, aggressive testing from developers or reviewers could exhaust the quota before the live demo is seen. An in-memory TTL cache with a 10-minute window:
-- Directly protects the monthly quota
-- Requires no external infrastructure (no Redis, no DB connection string)
-- Keeps the Railway deployment simple and fast to boot
+The Free plan allows **1,000 requests/month**. Without caching, aggressive testing could exhaust quota before the live demo is seen. An in-memory TTL cache with a 10-minute window directly protects the monthly quota with no external infrastructure.
 
 Cache key is `lat:lon:days:units:lang` with lat/lon rounded to 2 decimal places to avoid cache misses from noise-level coordinate differences.
 
 ### Why retry on 500/503 only — never on 4xx
-Retrying a 4xx (e.g., 400 missing param, 401 bad key, 429 quota exceeded) wastes quota and hides real problems. Server errors (500/503) are transient and worth retrying. Exponential backoff: 1s → 2s → 4s, max 3 attempts.
+Retrying a 4xx (400, 401, 403, 429) wastes quota and hides real problems. Exponential backoff: 1s → 2s → 4s, max 3 attempts.
 
 ### Why CORS is locked to specific origins
-Wildcarding CORS (`allow_origins=["*"]`) would allow any website to call your backend using a visitor's browser. Since the backend holds a real API key, this could be abused for quota draining. The backend explicitly lists `localhost:3000` and the Vercel production URL.
+Wildcarding CORS would allow any website to call your backend using a visitor's browser. Since the backend holds a real API key, this could drain quota. The backend lists only `localhost:3000` and the Vercel production URL.
 
 ---
 
@@ -128,9 +152,9 @@ Tests cover: cache hit/miss/expiry, all four risk thresholds, HTTP error code ma
 ## What I'd do with more time
 
 - **Webhook frost alerts** — Weather-AI supports webhooks on Pro+. Register a webhook for frost events, send SMS/email to farmers the night before.
-- **SMS integration** — Weather-AI has USSD/SMS routes on Scale plan. One-message risk summary to feature phones — high impact in low-connectivity farm areas.
-- **Historical trend charts** — Store past assessments in Supabase (schema in `pr.md §6`), show 30-day risk trend chart using Canvas API.
-- **Location map picker** — Replace lat/lon inputs with a Leaflet map click-to-select, much friendlier for farmers.
+- **PWA manifest** — installable on mobile home screen; a "farmer checks weather on their phone" use case. High polish-to-effort ratio.
+- **Compare view** — call `/api/weather` for 2-3 locations side by side. Zero new backend work, reuses everything.
+- **Historical quota chart** — already fetch `/v1/usage`; store snapshots in localStorage and chart the trend.
 
 ---
 

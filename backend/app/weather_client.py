@@ -201,15 +201,20 @@ async def fetch_usage() -> dict[str, Any]:
     return await _get("/v1/usage", {})
 
 
-async def post_trees_analyze(image_bytes: bytes, filename: str, content_type: str) -> dict[str, Any]:
-    """
-    POST a farm image to /v1/trees/analyze (multipart).
-    Not retried — image uploads are expensive on the quota.
-    """
-    url = f"{WEATHER_AI_BASE_URL}/v1/trees/analyze"
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        files = {"image": (filename, image_bytes, content_type)}
-        logger.info("POST %s filename=%s", url, filename)
-        response = await client.post(url, files=files, headers=_HEADERS)
-        _raise_for_status(response, "/v1/trees/analyze")
-        return response.json()
+async def fetch_weather_geo(
+    ip: str = "auto",
+    days: int = 7,
+    units: str = "metric",
+    lang: str = "en",
+) -> dict[str, Any]:
+    """Fetch weather + AI summary from /v1/weather-geo by IP address."""
+    return await _get(
+        "/v1/weather-geo",
+        {
+            "ip": ip,
+            "days": days,
+            "ai": "true",
+            "units": units,
+            "lang": lang,
+        },
+    )

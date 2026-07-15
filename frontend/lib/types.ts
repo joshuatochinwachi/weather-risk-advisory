@@ -35,6 +35,8 @@ export interface RiskAssessmentResponse {
   flags: RiskFlag[];
   ai_summary: string | null;
   forecast: DailyForecast[];
+  current: Record<string, unknown> | null;
+  hourly: Record<string, unknown>[] | null;
   cached: boolean;
   fetched_at: string;
 }
@@ -45,14 +47,6 @@ export interface QuotaResponse {
   remaining: number;
   resets_at: string | null;
   error_status?: boolean | null;
-}
-
-export interface TreeAnalysisResult {
-  total_tree_count: number | null;
-  canopy_coverage_pct: number | null;
-  health_status: string | null;
-  overlay_image_url: string | null;
-  raw: Record<string, unknown>;
 }
 
 export interface ApiError {

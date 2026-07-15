@@ -66,6 +66,8 @@ class RiskAssessmentResponse(BaseModel):
     flags: list[RiskFlag]
     ai_summary: str | None = None  # From Weather-AI's Gemini summary field
     forecast: list[dict[str, Any]]  # Pass-through daily forecast array
+    current: dict[str, Any] | None = None  # Current conditions from Weather-AI
+    hourly: list[dict[str, Any]] | None = None  # Hourly forecast array from Weather-AI
     cached: bool  # Was this served from cache — honest signal
     fetched_at: str  # ISO 8601 timestamp
 
@@ -76,15 +78,6 @@ class QuotaResponse(BaseModel):
     remaining: int
     resets_at: str | None = None  # ISO timestamp or human-readable
     error_status: bool | None = None
-
-
-
-class TreeAnalysisResult(BaseModel):
-    total_tree_count: int | None = None
-    canopy_coverage_pct: float | None = None
-    health_status: str | None = None
-    overlay_image_url: str | None = None
-    raw: dict[str, Any] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
