@@ -19,6 +19,14 @@ interface Particle {
   drift: number; // For snow horizontal movement
 }
 
+interface Ripple {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  opacity: number;
+}
+
 export function SkyCanvas({ phase, lat, lon }: SkyCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -52,10 +60,9 @@ export function SkyCanvas({ phase, lat, lon }: SkyCanvasProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const count = isMobile ? (isSnow ? 30 : 50) : (isSnow ? 60 : 100);
-    const width = canvas.width;
-    const height = canvas.height;
-
+    // Slightly higher counts for better visual impact
+    const count = isMobile ? (isSnow ? 40 : 80) : (isSnow ? 90 : 150);
+    
     // Initialize particles (drops/flakes)
     const particles: Particle[] = Array.from({ length: count }, () => {
       const pWidth = canvas.width || window.innerWidth;
@@ -63,16 +70,20 @@ export function SkyCanvas({ phase, lat, lon }: SkyCanvasProps) {
       return {
         x: Math.random() * pWidth,
         y: Math.random() * pHeight,
-        length: 8 + Math.random() * 12,
-        radius: 1.5 + Math.random() * 2.0,
-        speed: isSnow ? 1.0 + Math.random() * 1.5 : 5.0 + Math.random() * 4.0,
-        opacity: 0.15 + Math.random() * 0.45,
+        length: 12 + Math.random() * 18, // Longer, more dramatic rain streaks
+        radius: 1.5 + Math.random() * 2.5,
+        speed: isSnow ? 0.8 + Math.random() * 1.2 : 8.0 + Math.random() * 6.0, // Faster rain for dramatic action
+        opacity: 0.25 + Math.random() * 0.5, // More opaque
         drift: Math.random() * 2 - 1,
       };
     });
 
+    let ripples: Ripple[] = [];
     let animationId: number;
     let currentIntensity = 0;
+
+    // Diagonal angle for wind-driven rain
+    const windAngle = -2.5; 
 
     const tick = () => {
       // Determine target intensity based on current phase
@@ -82,18 +93,20 @@ export function SkyCanvas({ phase, lat, lon }: SkyCanvasProps) {
       } else if (phase === 'clearing') {
         targetIntensity = 0.0;
       } else if (phase === 'gathering') {
-        targetIntensity = 0.05; // Faint drops starting to form
+        targetIntensity = 0.35; // Faint drops are clearly visible and active
+      } else if (phase === 'dawn') {
+        targetIntensity = 0.05; // Extremely faint starting hints
       }
 
       // Smooth intensity transition (lerp)
-      currentIntensity += (targetIntensity - currentIntensity) * 0.08;
+      currentIntensity += (targetIntensity - currentIntensity) * 0.06;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (currentIntensity > 0.005) {
         if (isSnow) {
           // Draw Snow
-          ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+          ctx.fillStyle = '#ffffff';
           for (const p of particles) {
             ctx.globalAlpha = p.opacity * currentIntensity;
             ctx.beginPath();
@@ -102,7 +115,7 @@ export function SkyCanvas({ phase, lat, lon }: SkyCanvasProps) {
 
             // Update position
             p.y += p.speed;
-            p.x += Math.sin(p.y * 0.01 + p.drift) * 0.5;
+            p.x += Math.sin(p.y * 0.008 + p.drift) * 0.8;
 
             // Boundary checks
             if (p.y > canvas.height) {
@@ -113,25 +126,52 @@ export function SkyCanvas({ phase, lat, lon }: SkyCanvasProps) {
             if (p.x < 0) p.x = canvas.width;
           }
         } else {
-          // Draw Rain
-          ctx.strokeStyle = 'rgba(143, 184, 255, 0.7)';
+          // Draw Rain with Wind Angle
+          ctx.strokeStyle = 'rgba(178, 209, 255, 0.65)';
           ctx.lineWidth = 1.5;
           for (const p of particles) {
             ctx.globalAlpha = p.opacity * currentIntensity;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x, p.y + p.length);
+            // Draw diagonal drop using windAngle
+            ctx.lineTo(p.x + windAngle, p.y + p.length);
             ctx.stroke();
 
             // Update position
             p.y += p.speed;
+            p.x += windAngle * (p.speed / 10); // Match horizontal movement to speed
 
             // Boundary checks
             if (p.y > canvas.height) {
+              // Trigger a splash ripple with small probability or when hitting bottom
+              if (Math.random() < 0.25 && ripples.length < 30) {
+                ripples.push({
+                  x: p.x,
+                  y: canvas.height - 2 - Math.random() * 8, // slight variation in hit height
+                  radius: 1,
+                  maxRadius: 6 + Math.random() * 8,
+                  opacity: p.opacity * currentIntensity * 0.5
+                });
+              }
               p.y = -p.length;
-              p.x = Math.random() * canvas.width;
+              p.x = Math.random() * (canvas.width - windAngle * 2) + Math.abs(windAngle);
             }
           }
+
+          // Draw & Update Ripples
+          ctx.lineWidth = 1.0;
+          ripples = ripples.filter((r) => {
+            ctx.strokeStyle = `rgba(199, 219, 255, ${r.opacity})`;
+            ctx.beginPath();
+            ctx.ellipse(r.x, r.y, r.radius, r.radius * 0.25, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Update ripple parameters
+            r.radius += 0.6;
+            r.opacity -= 0.035;
+
+            return r.opacity > 0;
+          });
         }
       }
 
