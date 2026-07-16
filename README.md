@@ -555,9 +555,6 @@ weather-risk-advisory/
 │   └── public/                          # Static assets
 │
 ├── railway.toml                         # Root-level Railway config
-├── pr.md                                # Original project requirements spec (v1)
-├── pr2.md                               # Project requirements spec (v2)
-├── pr3.md                               # Splash screen design spec — Sky Cycle
 ├── .env                                 # Local secrets (git-ignored)
 ├── .gitignore                           # Excludes .env, .next, node_modules, __pycache__
 └── README.md                            # You are here
